@@ -2,5 +2,6 @@ __pycache__/
 *.pyc
 *$py.class
 .venv/
+.cursor/
 uv.lock
 .plan
