@@ -1,8 +1,8 @@
 {
-    // Markdown docs intentionally contain prose punctuation (em-dashes)
-    // and .memory/theory.md is a Chinese-language document on purpose.
+    // .memory/theory.md is an intentionally Chinese-language document.
+    // All other files must stay ASCII-clean.
     "exception_folders": {
-        "Non-ASCII": ["*.md"],
-        "Chinese/CJK": ["*.md"],
+        "Non-ASCII": [".memory"],
+        "Chinese/CJK": [".memory"],
     },
 }

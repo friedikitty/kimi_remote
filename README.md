@@ -2,7 +2,7 @@
 
 - One-click mobile web UI for [kimi code](https://www.kimi.com/code/docs/en/).
 - Starts `kimi web`, exposes it through an encrypted tunnel, and prints a
-    mobile-ready URL (bearer token embedded) plus a QR code — scan with your
+    mobile-ready URL (bearer token embedded) plus a QR code - scan with your
     phone and you're in the conversation.
 
 ![image-20260818164046526](README.assets/image-20260818164046526.png)
@@ -37,7 +37,7 @@ uv run kimi_remote.py --cloudflare # cloudflare quick tunnel (public URL)
 uv run kimi_remote.py --port 58627 # custom port
 ```
 
-Plain `python kimi_remote.py` also works — stdlib only, QR optional.
+Plain `python kimi_remote.py` also works - stdlib only, QR optional.
 
 Ctrl-C stops everything and tears down the tunnel.
 
@@ -45,13 +45,13 @@ Ctrl-C stops everything and tears down the tunnel.
 
 - One-time setup: run `tailscale up` and log in via the browser.
 - On the phone: install the Tailscale app and connect to the same tailnet.
-- The URL is `https://<machine>.<tailnet>.ts.net/#token=<token>` —
+- The URL is `https://<machine>.<tailnet>.ts.net/#token=<token>` -
   tailnet-only, HTTPS with a real certificate, never public.
 
 ## Cloudflare mode (`--cloudflare`)
 
 No account or phone app needed. `cloudflared` gives a random public
-`*.trycloudflare.com` URL. **The URL is public** — the kimi bearer token is
+`*.trycloudflare.com` URL. **The URL is public** - the kimi bearer token is
 the only authentication, so treat the full URL as a secret and don't share
 it. The QR/URL contains the token.
 
@@ -62,7 +62,7 @@ Two quirks:
   edge answers, so the phone connects on the first try.
 - Some QR scanners (Chrome's built-in one) strip the `#token=...`
   fragment. If the scanned link misses it, the token is also printed
-  separately — paste it into the web UI's login field.
+  separately - paste it into the web UI's login field.
 
 ## How it works
 

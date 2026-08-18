@@ -1,16 +1,16 @@
 # AGENTS.md
 
-Project: `kimi-remote` — a single-file Python launcher that exposes
+Project: `kimi-remote` - a single-file Python launcher that exposes
 `kimi web` (kimi code's web UI) through Tailscale serve or a Cloudflare
 quick tunnel, printing a token-authenticated mobile URL + QR code.
 
 ## Layout
 
-- `kimi_remote.py` — the whole tool. Keep it single-file.
-- `setup.ps1` — one-time env installer (uv + tunnel CLIs via winget).
-- `start.ps1` — interactive launcher; runs `kimi_remote.py` via `uv run`.
-- `pyproject.toml` — only so `uv run` provides `qrcode` for the QR.
-- `.plan` — working design notes (gitignored).
+- `kimi_remote.py` - the whole tool. Keep it single-file.
+- `setup.ps1` - one-time env installer (uv + tunnel CLIs via winget).
+- `start.ps1` - interactive launcher; runs `kimi_remote.py` via `uv run`.
+- `pyproject.toml` - only so `uv run` provides `qrcode` for the QR.
+- `.plan` - working design notes (gitignored).
 
 ## Conventions
 
