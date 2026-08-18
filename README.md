@@ -9,15 +9,23 @@
 
 ## Quick start (Windows)
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\setup.ps1   # one-time: installs uv + tunnel CLIs
-powershell -ExecutionPolicy Bypass -File .\start.ps1   # pick a tunnel, starts everything
-```
+* Just click setup.ps1 once following the prompt to install your environment 
 
-- `setup.ps1` asks which tunnel you want (Tailscale / Cloudflare / both),
-- installs the CLIs and [uv](https://docs.astral.sh/uv/) via winget, and walks
-- you through the one-time `tailscale up` login. `start.ps1` then runs the
-    - it will launcher with `uv run` (which also provides the `qrcode` package for the QR).
+    - `setup.ps1` asks which tunnel you want (Tailscale / Cloudflare / both),
+    - you through the one-time `tailscale up` login. 
+    - installs the CLIs and [uv](https://docs.astral.sh/uv/) via winget, and walks
+
+* Click `start.ps1` 
+
+    * it will launcher with `uv run` (which also provides the `qrcode` package for the QR).
+
+* If you want to manually run:
+
+    ```powershell
+    powershell -ExecutionPolicy Bypass -File .\setup.ps1   # one-time: installs uv + tunnel CLIs
+    powershell -ExecutionPolicy Bypass -File .\start.ps1   # pick a tunnel, starts everything
+    ```
+
 - Use your phone to scan the qr code(or copy the link to your phone via email or what ever you can), paste to your web browser, enjoy the GUI
     - TailScale on mobile may be killed by the system constantly , **please activate tailscale manually when the connection seems failed**
 
@@ -58,14 +66,22 @@ Two quirks:
 
 ## How it works
 
+- Picks a verified-free port itself (kimi web would silently bump a busy
+  port, which would break the tunnel mapping).
 - Reads the bearer token from `~/.kimi-code/server.token` (creates it with
   `kimi web rotate-token` if missing).
-- Launches `kimi web --no-open --port P --allowed-host <tunnel-host>` —
-  `--allowed-host` is required because kimi's DNS-rebinding check rejects
-  non-localhost Host headers.
-- Tailscale: `tailscale serve --bg --https=443 http://127.0.0.1:P`
-  (removed on exit). Cloudflare: parses the quick-tunnel URL from
-  `cloudflared`'s stderr before starting kimi, so the host is known.
+- Starts `kimi web --no-open --port P --allowed-host <tunnel-host>` and
+  the tunnel **in parallel**, for a faster link:
+  - Tailscale: `tailscale serve --bg --https=443 http://127.0.0.1:P`
+    (removed on exit); hostname is known upfront from
+    `tailscale status --json`.
+  - Cloudflare: parses the quick-tunnel URL from `cloudflared`'s stderr;
+    `--allowed-host .trycloudflare.com` (leading dot = suffix match)
+    covers whatever random hostname comes back.
+- Probes the public URL and only prints the QR once the tunnel edge
+  actually answers (cloudflared prints the URL up to ~60s early).
+- Prints the bare token too, as a fallback for QR scanners that strip
+  the `#token=...` fragment.
 
 ## Requirements
 
