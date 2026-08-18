@@ -1,0 +1,6 @@
+[project]
+name = "kimi-remote"
+version = "0.1.0"
+description = "One-click mobile web UI for kimi code via Tailscale or Cloudflare"
+requires-python = ">=3.10"
+dependencies = ["qrcode>=7.4"]

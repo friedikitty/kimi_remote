@@ -5,13 +5,27 @@ Starts `kimi web`, exposes it through an encrypted tunnel, and prints a
 mobile-ready URL (bearer token embedded) plus a QR code — scan with your
 phone and you're in the conversation.
 
-## Usage
+## Quick start (Windows)
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1   # one-time: installs uv + tunnel CLIs
+powershell -ExecutionPolicy Bypass -File .\start.ps1   # pick a tunnel, starts everything
+```
+
+`setup.ps1` asks which tunnel you want (Tailscale / Cloudflare / both),
+installs the CLIs and [uv](https://docs.astral.sh/uv/) via winget, and walks
+you through the one-time `tailscale up` login. `start.ps1` then runs the
+launcher with `uv run` (which also provides the `qrcode` package for the QR).
+
+## Usage (manual)
 
 ```sh
-python kimi_remote.py              # tailscale serve (default, recommended)
-python kimi_remote.py --cloudflare # cloudflare quick tunnel (public URL)
-python kimi_remote.py --port 58627 # custom port
+uv run kimi_remote.py              # tailscale serve (default, recommended)
+uv run kimi_remote.py --cloudflare # cloudflare quick tunnel (public URL)
+uv run kimi_remote.py --port 58627 # custom port
 ```
+
+Plain `python kimi_remote.py` also works — stdlib only, QR optional.
 
 Ctrl-C stops everything and tears down the tunnel.
 

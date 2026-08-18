@@ -1,4 +1,6 @@
 __pycache__/
 *.pyc
 *$py.class
+.venv/
+uv.lock
 .plan

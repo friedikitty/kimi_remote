@@ -65,12 +65,21 @@ def print_url(url):
     print(f"    {url}\n")
     try:
         import qrcode
-
+    except ImportError:
+        print("  (install `qrcode` for a scannable QR code; URL above works too)")
+        print()
+        return
+    try:
+        # block glyphs need a utf-8 console (GBK codepages would crash)
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, OSError):
+        pass
+    try:
         qr = qrcode.QRCode(border=1)
         qr.add_data(url)
         qr.print_ascii(invert=True)
-    except ImportError:
-        print("  (install `qrcode` for a scannable QR code; URL above works too)")
+    except UnicodeEncodeError:
+        print("  (console can't render the QR code; use the URL above)")
     print()
 
 
