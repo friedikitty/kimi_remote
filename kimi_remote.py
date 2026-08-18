@@ -47,6 +47,21 @@ def get_token(kimi):
     return token
 
 
+def free_port(start):
+    """First free loopback port >= start. kimi web silently bumps a busy
+    port, which would break the tunnel mapping - so we pick upfront."""
+    port = start
+    while True:
+        try:
+            with socket.socket() as s:
+                s.bind(("127.0.0.1", port))
+            return port
+        except OSError:
+            port += 1
+            if port > start + 20:
+                die(f"no free port in {start}-{start + 20}")
+
+
 def wait_port(port, proc, timeout=20):
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -84,20 +99,19 @@ def print_url(url):
 
 
 def start_kimi_web(kimi, port, allowed_host):
+    """Spawn kimi web without waiting; call wait_port() afterwards."""
     cmd = [kimi, "web", "--no-open", "--port", str(port)]
     if allowed_host:
         cmd += ["--allowed-host", allowed_host]
     print("+", " ".join(cmd))
-    proc = subprocess.Popen(cmd)
-    wait_port(port, proc)
-    return proc
+    return subprocess.Popen(cmd)
 
 
 # --- transports ---------------------------------------------------------------
 
 
-def setup_tailscale(port):
-    """Return base URL. Registers `tailscale serve` in the background."""
+def tailscale_dns():
+    """Return this node's ts.net DNS name; dies if tailscale is not up."""
     ts = require("tailscale")
     out = subprocess.run(
         [ts, "status", "--json"], capture_output=True, text=True
@@ -110,12 +124,14 @@ def setup_tailscale(port):
             "tailscale is not running. Run `tailscale up` once (browser login),\n"
             "then re-run this script."
         )
-    dns = status["Self"]["DNSName"].rstrip(".")
+    return ts, status["Self"]["DNSName"].rstrip(".")
+
+
+def tailscale_serve(ts, port):
     subprocess.run(
         [ts, "serve", "--bg", "--https=443", f"http://127.0.0.1:{port}"],
         check=True,
     )
-    return f"https://{dns}", dns
 
 
 def teardown_tailscale():
@@ -142,6 +158,10 @@ def setup_cloudflare(port):
             break
         m = CF_URL_RE.search(line)
         if m:
+            # api.trycloudflare.com is cloudflared's control plane, not
+            # the tunnel URL - keep reading
+            if m.group(0) == "https://api.trycloudflare.com":
+                continue
             url = m.group(0)
             break
     if not url:
@@ -160,6 +180,35 @@ def setup_cloudflare(port):
 # --- main ---------------------------------------------------------------------
 
 
+def wait_edge(base, timeout=120):
+    """Poll the public URL until the tunnel edge actually routes it.
+
+    cloudflared prints the quick-tunnel URL seconds before the edge can
+    serve it (observed: up to ~60s), so announcing earlier hands the phone
+    a dead link. Any HTTP response - even 401 - means the edge is live.
+    Fail-open after timeout: print the URL anyway with a warning.
+    """
+    import urllib.error
+    import urllib.request
+
+    print("waiting for the tunnel edge to come online", end="", flush=True)
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            urllib.request.urlopen(base + "/", timeout=10)
+            break  # 2xx: live
+        except urllib.error.HTTPError:
+            break  # 401/403: edge reachable, auth/host layer answered
+        except Exception:
+            print(".", end="", flush=True)
+            time.sleep(3)
+    else:
+        print("\nwarning: tunnel not responding yet - the link may need")
+        print("another minute before it works on your phone.")
+        return
+    print(" live!")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument(
@@ -172,16 +221,30 @@ def main():
 
     kimi = require("kimi")
     token = get_token(kimi)
+    port = free_port(args.port)
+    if port != args.port:
+        print(f"port {args.port} is busy, using {port}")
 
     procs = []
     try:
         if args.cloudflare:
-            base, host, cf_proc = setup_cloudflare(args.port)
+            # parallel: kimi web boots (~10s) while cloudflared (~15s)
+            # fetches a URL. ".trycloudflare.com" is a suffix-match
+            # allowed-host, so kimi web can start before the URL is known.
+            web = start_kimi_web(kimi, port, ".trycloudflare.com")
+            procs.append(web)
+            base, host, cf_proc = setup_cloudflare(port)
             procs.append(cf_proc)
+            wait_port(port, web)
         else:
-            base, host = setup_tailscale(args.port)
-
-        procs.append(start_kimi_web(kimi, args.port, host))
+            # parallel: tailscale serve registration does not need the
+            # kimi port to be up yet, so both happen at once.
+            ts, host = tailscale_dns()
+            web = start_kimi_web(kimi, port, host)
+            procs.append(web)
+            tailscale_serve(ts, port)
+            wait_port(port, web)
+            base = f"https://{host}"
 
         if args.cloudflare:
             print("\nNOTE: this URL is PUBLIC. Anyone with it + the token gets")
@@ -189,7 +252,11 @@ def main():
         else:
             print("\ntailnet-only URL. Phone must be on the same tailnet")
             print("(Tailscale app installed and connected).")
+        wait_edge(base)
         print_url(f"{base}/#token={token}")
+        # some QR scanners strip the #fragment - offer a manual fallback
+        print(f"  If the scanned link misses '#token=...', paste this")
+        print(f"  token on the login page instead:\n\n    {token}\n")
 
         print("serving... Ctrl-C to stop.")
         while True:

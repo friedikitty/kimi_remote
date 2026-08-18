@@ -1,9 +1,11 @@
 # kimi-remote
 
-One-click mobile web UI for [kimi code](https://www.kimi.com/code/docs/en/).
-Starts `kimi web`, exposes it through an encrypted tunnel, and prints a
-mobile-ready URL (bearer token embedded) plus a QR code — scan with your
-phone and you're in the conversation.
+- One-click mobile web UI for [kimi code](https://www.kimi.com/code/docs/en/).
+- Starts `kimi web`, exposes it through an encrypted tunnel, and prints a
+    mobile-ready URL (bearer token embedded) plus a QR code — scan with your
+    phone and you're in the conversation.
+
+![image-20260818164046526](README.assets/image-20260818164046526.png)
 
 ## Quick start (Windows)
 
@@ -12,10 +14,12 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1   # one-time: installs uv +
 powershell -ExecutionPolicy Bypass -File .\start.ps1   # pick a tunnel, starts everything
 ```
 
-`setup.ps1` asks which tunnel you want (Tailscale / Cloudflare / both),
-installs the CLIs and [uv](https://docs.astral.sh/uv/) via winget, and walks
-you through the one-time `tailscale up` login. `start.ps1` then runs the
-launcher with `uv run` (which also provides the `qrcode` package for the QR).
+- `setup.ps1` asks which tunnel you want (Tailscale / Cloudflare / both),
+- installs the CLIs and [uv](https://docs.astral.sh/uv/) via winget, and walks
+- you through the one-time `tailscale up` login. `start.ps1` then runs the
+    - it will launcher with `uv run` (which also provides the `qrcode` package for the QR).
+- Use your phone to scan the qr code(or copy the link to your phone via email or what ever you can), paste to your web browser, enjoy the GUI
+    - TailScale on mobile may be killed by the system constantly , **please activate tailscale manually when the connection seems failed**
 
 ## Usage (manual)
 
@@ -42,6 +46,15 @@ No account or phone app needed. `cloudflared` gives a random public
 `*.trycloudflare.com` URL. **The URL is public** — the kimi bearer token is
 the only authentication, so treat the full URL as a secret and don't share
 it. The QR/URL contains the token.
+
+Two quirks:
+
+- cloudflared prints the URL before Cloudflare's edge can serve it (seen:
+  up to ~60s). The launcher probes the URL and only shows the QR once the
+  edge answers, so the phone connects on the first try.
+- Some QR scanners (Chrome's built-in one) strip the `#token=...`
+  fragment. If the scanned link misses it, the token is also printed
+  separately — paste it into the web UI's login field.
 
 ## How it works
 
